@@ -74,6 +74,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       provisional: false,
       sound: true,
     );
+    print('User granted permission: ${settings.authorizationStatus}');
     FirebaseMessaging.instance
         .getToken()
         .then((value) => print('tokennnnnnn111' + value));

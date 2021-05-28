@@ -3,21 +3,21 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>659149019308-4mupmrll2n47tutii9emcco4mt6e3oah.apps.googleusercontent.com</string>
+	<string>53320111915-bb0gdfv6eo4t386tvc572c83790qmagg.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.659149019308-4mupmrll2n47tutii9emcco4mt6e3oah</string>
+	<string>com.googleusercontent.apps.53320111915-bb0gdfv6eo4t386tvc572c83790qmagg</string>
 	<key>API_KEY</key>
-	<string>AIzaSyBrcjODNN2UySUOeaU_KZR3y9m5dv34-NQ</string>
+	<string>AIzaSyBPc1f9U-UMw3K31GEsC_DVEgoNFlYHKPc</string>
 	<key>GCM_SENDER_ID</key>
-	<string>659149019308</string>
+	<string>53320111915</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.wes.chatLb</string>
+	<string>com.wes.chatlb</string>
 	<key>PROJECT_ID</key>
-	<string>chatlp-a74d5</string>
+	<string>test-chatlp</string>
 	<key>STORAGE_BUCKET</key>
-	<string>chatlp-a74d5.appspot.com</string>
+	<string>test-chatlp.appspot.com</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:659149019308:ios:13c6f36bd8be6f710f6709</string>
+	<string>1:53320111915:ios:619eee33981e798f5d976e</string>
 </dict>
 </plist>
