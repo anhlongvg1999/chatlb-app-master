@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "659149019308",
+    "project_id": "chatlp-a74d5",
+    "storage_bucket": "chatlp-a74d5.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659149019308:android:236e5fb870886fa90f6709",
+        "android_client_info": {
+          "package_name": "com.wes.chat_lb"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "659149019308-l7teciuo2m8a01ftted657kvkr7gasll.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDFvvbPBmICqPg6C6hhz7h4vHDbgFpmtjU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "659149019308-l7teciuo2m8a01ftted657kvkr7gasll.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
