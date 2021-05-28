@@ -62,10 +62,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  _configureMessaging() {
+  _configureMessaging() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
     FirebaseMessaging.instance
         .getToken()
-        .then((value) => print('tokennnnnnn' + value));
+        .then((value) => print('tokennnnnnn111' + value));
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       print('Got a message whilst in the foreground!');
       print('Message data: ${message.data}');
