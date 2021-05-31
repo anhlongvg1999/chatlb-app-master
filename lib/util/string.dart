@@ -1,5 +1,5 @@
 class Strings {
-  static String appName = "Chat LP";
+  static String appName = "クロスch！";
   static String login = "ログイン";
   static String id = "ID";
   static String pass = "PASS";
