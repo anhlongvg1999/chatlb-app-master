@@ -55,14 +55,20 @@ class _AlertUnSubscribedBoxState extends State<AlertUnSubscribedBox> {
     );
   }
 
-  _updateReceiveNotification() async {
+  _leaveTopic() async {
     try {
       EasyLoading.show();
-      final _newReceive = !widget.topic.receive;
-      final params = {"receive": _newReceive, "topic_id": widget.topic.id};
-      final response = await ApiService.updateReceiveNotification(params);
+      final params = {
+        "subscribe": false,
+        "topic_ids": [
+          widget.topic.id
+        ]
+      };
+      final response = await ApiService.subscribe(params);
       setState(() {
         EasyLoading.dismiss();
+      });
+      setState(() {
         if (response.code != 200) {
           _showAlertMessage(response.message);
           return;
@@ -72,6 +78,7 @@ class _AlertUnSubscribedBoxState extends State<AlertUnSubscribedBox> {
     } catch (e) {
       print(e.toString());
       EasyLoading.dismiss();
+      _showAlertMessage(Strings.systemError);
     }
   }
 
@@ -114,7 +121,7 @@ class _AlertUnSubscribedBoxState extends State<AlertUnSubscribedBox> {
                 alignment: Alignment.center,
                 child: FlatButton(
                   onPressed: () {
-                    _updateReceiveNotification();
+                    _leaveTopic();
                   },
                   padding: EdgeInsets.only(left: 32, right: 32, top: 4, bottom: 4),
                   child: Text(

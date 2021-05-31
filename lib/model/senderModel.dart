@@ -15,6 +15,7 @@ class SenderModel {
   @JsonKey(name: 'avatar')
   String avatar;
 
+
   SenderModel(this.id, this.name, this.avatar);
 
   factory SenderModel.fromJson(Map<String, dynamic> json) =>
@@ -26,6 +27,7 @@ class SenderModel {
   Map<String, dynamic> toJson() => _$SenderModelToJson(this);
 
   String avatarUrl() {
+    //return ApiURL.API + avatar;
     return avatar;
   }
 }

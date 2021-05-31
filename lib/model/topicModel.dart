@@ -33,8 +33,10 @@ class TopicModel {
   String image;
   @JsonKey(name: 'image_url')
   String imageUrl;
-  @JsonKey(name: 'is_subcribe')
-  bool isSubcribe;
+  @JsonKey(name: 'thumbnail_url')
+  String thumbnailUrl;
+  @JsonKey(name: 'is_subscribe')
+  bool isSubscribe;
   @JsonKey(name: 'receive', nullable: true)
   bool receive = true;
 
@@ -49,7 +51,8 @@ class TopicModel {
       this.avatar,
       this.image,
       this.imageUrl,
-      this.isSubcribe,
+      this.thumbnailUrl,
+      this.isSubscribe,
       this.receive);
 
   factory TopicModel.fromJson(Map<String, dynamic> json) =>
@@ -86,29 +89,35 @@ class TopicModel {
   }
 
   String avatarUrl() {
-    return (avatar ?? "");
+    //return ApiURL.API + (avatar ?? "");
+    return avatar;
   }
 
   bool isImage() {
-    if (image.isEmpty) {
+    if (image == null || image.isEmpty) {
       return false;
     }
     final url = image.toUpperCase();
-    return (url.contains(".png".toUpperCase()) ||
-        url.contains(".jpg".toUpperCase()) ||
-        url.contains(".jpeg".toUpperCase()) ||
-        url.contains(".bmp".toUpperCase()) ||
-        url.contains(".gif".toUpperCase()) ||
-        url.contains(".tiff".toUpperCase()) ||
-        url.contains(".webp".toUpperCase()) ||
-        url.contains(".webp".toUpperCase()));
+    return (url.contains(".png".toUpperCase())
+        || url.contains(".jpg".toUpperCase())
+        || url.contains(".jpeg".toUpperCase())
+        || url.contains(".bmp".toUpperCase())
+        || url.contains(".gif".toUpperCase())
+        || url.contains(".tiff".toUpperCase())
+        || url.contains(".webp".toUpperCase())
+        || url.contains(".webp".toUpperCase()));
   }
 
   String getImageUrl() {
-    return image;
+    //return ApiURL.API + image;
+    return image ?? "";
+  }
+
+  String getThumbUrl() {
+    return thumbnailUrl ?? "";
   }
 
   String getImageLinkUrl() {
-    return imageUrl;
+    return imageUrl ?? "";
   }
 }

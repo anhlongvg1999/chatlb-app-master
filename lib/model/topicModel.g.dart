@@ -14,11 +14,12 @@ TopicModel _$TopicModelFromJson(Map<String, dynamic> json) {
     json['unread_message'] as int,
     json['created_at'] as int,
     json['name'] as String,
-    json['description'] as String,
+    json['last_message'] as String,
     json['avatar'] as String,
     json['image'] as String,
     json['image_url'] as String,
-    json['is_subcribe'] as bool,
+    json['thumbnail_url'] as String,
+    json['is_subscribe'] as bool,
     json['receive'] as bool,
   );
 }
@@ -31,10 +32,11 @@ Map<String, dynamic> _$TopicModelToJson(TopicModel instance) =>
       'unread_message': instance.unreadMessage,
       'created_at': instance.createdAt,
       'name': instance.name,
-      'description': instance.lastMessage,
+      'last_message': instance.lastMessage,
       'avatar': instance.avatar,
       'image': instance.image,
       'image_url': instance.imageUrl,
-      'is_subcribe': instance.isSubcribe,
+      'thumbnail_url': instance.thumbnailUrl,
+      'is_subscribe': instance.isSubscribe,
       'receive': instance.receive,
     };

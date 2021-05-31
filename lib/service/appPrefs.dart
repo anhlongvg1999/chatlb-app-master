@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AppPrefs {
   final String _KEY_SAVE_TOKEN = "save.token";
+  final String _KEY_SAVE_PASSWORD = "save.password";
   final String _KEY_SAVE_PUSH_TOKEN = "save.push.token";
   final String _KEY_SAVE_USER = "save.user";
 
@@ -38,6 +39,16 @@ class AppPrefs {
     prefs.setString(_KEY_SAVE_TOKEN, value);
   }
 
+  Future<String> getPassword() async {
+    final SharedPreferences prefs = await _prefs;
+    return prefs.getString(_KEY_SAVE_PASSWORD);
+  }
+
+  savePassword(String password) async {
+    final SharedPreferences prefs = await _prefs;
+    prefs.setString(_KEY_SAVE_PASSWORD, password);
+  }
+
   Future<UserModel> getCurrentUser() async {
     final SharedPreferences prefs = await _prefs;
     String userString = prefs.getString(_KEY_SAVE_USER);
@@ -63,5 +74,6 @@ class AppPrefs {
     final SharedPreferences prefs = await _prefs;
     prefs.remove(_KEY_SAVE_USER);
     prefs.remove(_KEY_SAVE_TOKEN);
+    prefs.remove(_KEY_SAVE_PASSWORD);
   }
 }

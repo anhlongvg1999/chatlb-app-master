@@ -31,8 +31,10 @@ class MessageModel {
   String topicId;
   @JsonKey(name: 'created_at')
   int createdAt;
-  @JsonKey(name: 'sender', fromJson: _dataListSenderFromJson)
-  List<SenderModel> senders;
+  @JsonKey(name: 'users', fromJson: _dataListSenderFromJson)
+  List<SenderModel> users;
+  @JsonKey(name: 'sender', fromJson: _dataSenderFromJson)
+  SenderModel sender;
   @JsonKey(name: 'updated_at')
   int updatedAt;
   @JsonKey(name: 'files', fromJson: _dataListFileFromJson)
@@ -47,7 +49,8 @@ class MessageModel {
       this.content,
       this.topicId,
       this.createdAt,
-      this.senders,
+      this.users,
+      this.sender,
       this.updatedAt,
       this.files);
 
@@ -81,11 +84,21 @@ class MessageModel {
     return List.empty();
   }
 
+  static SenderModel _dataSenderFromJson<T>(Object json) {
+    if (json == null) return null;
+    return SenderModel.fromJson(json as Map<String, dynamic>);
+  }
+
+
+
   String getContent() {
     return content != null ? content : "";
   }
 
   String toTime() {
+    if (sentAt == null) {
+      return "";
+    }
     var date =
         new DateTime.fromMillisecondsSinceEpoch(sentAt) ?? DateTime.now();
     var dateFormat = DateFormat('HH:mm a');
@@ -99,11 +112,11 @@ class MessageModel {
     return dateFormat.format(date);
   }
 
-  SenderModel sender() {
-    if (senders == null || senders.isEmpty) {
+  SenderModel user() {
+    if (users == null || users.isEmpty) {
       return null;
     }
-    return senders.first;
+    return users.first;
   }
 
   bool isFile() {
@@ -143,7 +156,8 @@ class MessageModel {
   }
 
   String filesUrl() {
-    return ApiURL.API + files.first.path;
+    //return ApiURL.API + files.first.path;
+    return files.first.path;
   }
 
   String getFilePlaceHolder() {

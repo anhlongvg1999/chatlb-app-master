@@ -13,7 +13,6 @@ import 'package:chat_lb/util/color.dart';
 import 'package:chat_lb/util/string.dart';
 import 'package:chat_lb/widget/alertUnSubscribed.dart';
 import 'package:chat_lb/widget/categoryWidget.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -48,85 +47,148 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _removeBadge();
     SocketService.shared().connect();
     _loadDeepLinkData();
-    _configureMessaging();
+    _loadNotificationData();
+    _getUnRead();
+  }
+
+  _getUnRead() async {
+    try {
+      final response = await ApiService.getUnread();
+      if (response.code == 200) {
+        final _number = response.data;
+        if (await FlutterAppBadger.isAppBadgeSupported() == true) {
+          FlutterAppBadger.updateBadgeCount(_number);
+        }
+      }
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  _getDeepLink() async {
+    final provider = Provider.of<DeepLinkModel>(context, listen: false);
+    provider.addListener(() {
+      String _deepLink = provider.deepLink ?? "";
+      print('update deepLink: ' + _deepLink);
+      if (_deepLink != null && _deepLink.isNotEmpty) {
+        final _topic = _deepLink.replaceAll("topic=", "");
+        setState(() {
+          _subscribeTopic(_topic);
+        });
+        provider.updateDeepLink("");
+      }
+    });
+    String _deepLink = provider.deepLink ?? "";
+    print('get deepLink: ' + _deepLink);
+    if (_deepLink != null && _deepLink.isNotEmpty) {
+      final _topic = _deepLink.replaceAll("topic=", "");
+      _subscribeTopic(_topic);
+    } else {
+      _refreshTopics();
+    }
   }
 
   _loadDeepLinkData() {
     final provider = Provider.of<DeepLinkModel>(context, listen: false);
-    String _deepLink = provider.deepLink;
+    String _deepLink = provider.deepLink ?? "";
+    print('load deepLink: ' + _deepLink);
     if (_deepLink != null && _deepLink.isNotEmpty) {
-      final _topic = _deepLink.replaceAll("wes://chatlp?topic=", "");
+      final _topic = _deepLink.replaceAll("topic=", "");
       _subscribeTopic(_topic);
+      provider.updateDeepLink("");
     } else {
       _loadTopic();
     }
   }
 
-  _configureMessaging() async {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
+  _getNotificationData() async {
+    final provider = Provider.of<DeepLinkModel>(context, listen: false);
+    String _topicId = provider.topicNotification ?? "";
+    print('load topicNotification: ' + _topicId);
+    if (_topicId != null && _topicId.isNotEmpty) {
+      _loadTopicDetail(_topicId);
+      provider.setTopicNotification("");
+    }
 
-    NotificationSettings settings = await messaging.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true,
-    );
-    print('User granted permission: ${settings.authorizationStatus}');
-    FirebaseMessaging.instance
-        .getToken()
-        .then((value) => print('tokennnnnnn111' + value));
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-      print('Got a message whilst in the foreground!');
-      print('Message data: ${message.data}');
-      if (message.data != null) {
-        print('Message data: ${message.data}');
-        final Map<String, dynamic> data = message.data;
-        if (data.containsKey('unread_number')) {
-          final numberUnread = data['unread_number'];
-          print('numberUnread' + numberUnread);
-          int numberUnreadInt = int.parse(numberUnread);
-          if (await FlutterAppBadger.isAppBadgeSupported() == true &&
-              numberUnreadInt != -1) {
-            setState(() {
-              for (int index = 0; index < _topicList.length; index++) {
-                if (_topicList[index].id.toString() ==
-                    data['topic_id'].toString()) {
-                  _topicList[index].unreadMessage = numberUnreadInt;
-                }
-              }
-            });
-          }
-        }
-      }
+    String _topicOpenId = provider.messageOpenApp ?? "";
+    print('refresh topicNotification: ' + _topicOpenId);
+    if (_topicOpenId != null && _topicOpenId.isNotEmpty) {
+      _refreshTopics();
+      provider.setOpenNotification("");
+    }
+  }
 
-      if (message.notification != null) {
-        print('Message also contained a notification: ${message.notification}');
+  _loadNotificationData() {
+    final provider = Provider.of<DeepLinkModel>(context, listen: false);
+    String _topicId = provider.topicNotification ?? "";
+    print('load topicNotification: ' + _topicId);
+    if (_topicId != null && _topicId.isNotEmpty) {
+      _loadTopicDetail(_topicId);
+      provider.setTopicNotification("");
+    }
+
+    //refresh data after receive push
+    provider.addListener(() {
+      String _topicOpenId = provider.messageOpenApp ?? "";
+      print('refresh topicNotification: ' + _topicOpenId);
+      if (_topicOpenId != null && _topicOpenId.isNotEmpty) {
+        _refreshTopics();
+        provider.setOpenNotification("");
       }
     });
+  }
+
+  _loadTopicDetail(String topicId) async {
+    try {
+      EasyLoading.show();
+      final response = await ApiService.getTopic(topicId);
+      setState(() {
+        EasyLoading.dismiss();
+      });
+      if (response.code == 200) {
+        final _topic = response.data;
+        setState(() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => ChatPage(
+                      platform: widget.platform,
+                      topic: _topic,
+                    )),
+          ).then((value) {
+            setState(() {
+              if (value != null && value) {
+                _refreshTopics();
+              }
+            });
+          });
+        });
+      }
+    } catch (e) {
+      print(e.toString());
+      setState(() {
+        EasyLoading.dismiss();
+      });
+    }
   }
 
   _subscribeTopic(String topicId) async {
     try {
       EasyLoading.show();
-      final params = {
-        "subscribe": true,
-        "topic_ids": [topicId]
-      };
-      var response = await ApiService.subscribe(params);
+      final provider = Provider.of<DeepLinkModel>(context, listen: false);
+      provider.updateDeepLink("");
+      var response = await ApiService.joinQr(topicId);
       if (response.code == 200) {
         print('subscribe $topicId success');
       }
       setState(() {
         EasyLoading.dismiss();
-        _loadTopic();
+        _refreshTopics();
       });
     } catch (e) {
       setState(() {
         EasyLoading.dismiss();
-        _loadTopic();
+        _refreshTopics();
       });
     }
   }
@@ -153,10 +215,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     print('didChangeAppLifecycleState ${state.toString()}');
     setState(() {
       if (AppLifecycleState.resumed == state) {
-        //EasyLoading.show();
         SocketService.shared().connect();
-        _refreshTopics();
-        //EasyLoading.dismiss();
+        _getDeepLink();
+        _getNotificationData();
+        _getUnRead();
         //_removeBadge();
       } else if (AppLifecycleState.inactive == state ||
           AppLifecycleState.paused == state) {
@@ -175,25 +237,27 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void _refreshTopics() {
     _endOfHistory = false;
     _currentPage = 1;
-    _topicList.clear();
     _loadTopic();
   }
 
   _loadTopic() async {
     try {
-      EasyLoading.show();
       setState(() {
         _isLoading = true;
       });
       final _name = _textSearchController.text;
+      EasyLoading.show();
       var response =
           await ApiService.getListTopic(name: _name, page: _currentPage);
       if (!mounted) {
         return;
       }
+      EasyLoading.dismiss();
       setState(() {
-        EasyLoading.dismiss();
         if (response.code == 200) {
+          if (_currentPage == 1) {
+            _topicList.clear();
+          }
           _topicList.addAll(response.data.objects.reversed);
           _endOfHistory = response.data.objects.length < 10;
         } else if (response.code == 401) {
@@ -322,6 +386,41 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _onItemTapped(TopicModel topicModel) async {
+    _updateReceiveNotification(topicModel);
+  }
+
+  Future<void> _onItemLeaveTapped(TopicModel topicModel) async {
+    _unsubscribeTopic(topicModel);
+  }
+
+  _updateReceiveNotification(TopicModel topicModel) async {
+    try {
+      EasyLoading.show();
+      final _newReceive = !topicModel.receive;
+      final params = {"receive": _newReceive, "topic_id": topicModel.id};
+      final response = await ApiService.updateReceiveNotification(params);
+      setState(() {
+        EasyLoading.dismiss();
+      });
+      setState(() {
+        if (response.code != 200) {
+          _showAlertMessage(response.message);
+          return;
+        }
+        final _newReceive = !topicModel.receive;
+        _topicList
+            .firstWhere((element) => element.id == topicModel.id)
+            ?.receive = _newReceive;
+      });
+    } catch (e) {
+      print(e.toString());
+      setState(() {
+        EasyLoading.dismiss();
+      });
+    }
+  }
+
+  _unsubscribeTopic(TopicModel topicModel) async {
     final result = await showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -329,10 +428,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         });
     if (result) {
       setState(() {
-        final _newReceive = !topicModel.receive;
-        _topicList
-            .firstWhere((element) => element.id == topicModel.id)
-            ?.receive = _newReceive;
+        _topicList.removeWhere((element) => element.id == topicModel.id);
       });
     }
   }
@@ -340,7 +436,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   _onItemBarTapped(NavigateModel navigateModel) async {
     final url = navigateModel?.linkUrl() ?? "";
     if (await canLaunch(url)) {
-      print('urrlllllll' + url);
       await launch(url);
     } else {
       _showAlertMessage("${Strings.canNotOpenLink} ${navigateModel.name}");
@@ -384,7 +479,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return InkWell(
       onTap: () => {
         Navigator.push(
-            context, MaterialPageRoute(builder: (context) => SettingPage())),
+                context, MaterialPageRoute(builder: (context) => SettingPage()))
+            .then((value) {
+          final provider = Provider.of<DeepLinkModel>(context, listen: false);
+          if (true == provider.refreshTopic) {
+            _refreshTopics();
+          }
+          provider.hasRefreshTopic(false);
+        }),
       },
       child: Padding(
         padding: EdgeInsets.only(top: 4.0),
@@ -397,7 +499,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               size: 28,
               color: Theme.of(context).accentColor,
             ),
-            Text("Setting"),
+            Text("設定"),
           ],
         ),
       ),
@@ -422,7 +524,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       decoration: BoxDecoration(
           border: Border.all(color: Color(AppColors.primaryColor)),
           borderRadius: BorderRadius.all(Radius.circular(8))),
+      alignment: Alignment.center,
       child: TextField(
+          textAlignVertical: TextAlignVertical.center,
           controller: _textSearchController,
           onChanged: (value) {
             if (_timer != null) {
@@ -462,6 +566,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               index: index,
               topicModel: _topic,
               isEndList: index == _topicList.length)),
+      secondaryActions: [
+        IconCategoryAction(
+          caption: '退会する',
+          captionColor: Colors.red,
+          color: Colors.white,
+          iconWidget:
+              Image.asset("assets/images/leave_topic.png", fit: BoxFit.contain),
+          onTap: () {
+            _onItemLeaveTapped(_topic);
+          },
+        ),
+      ],
       actions: <Widget>[
         IconCategoryAction(
           caption: _topic.receive ?? true ? 'ONにする' : 'OFFにする',

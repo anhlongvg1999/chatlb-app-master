@@ -1,11 +1,7 @@
-import 'package:chat_lb/screen/login.dart';
-import 'package:chat_lb/screen/registerFirst.dart';
-import 'package:chat_lb/screen/registerSeconds.dart';
-import 'package:chat_lb/service/apiService.dart';
+import 'package:chat_lb/model/socketResponse.dart';
 import 'package:chat_lb/util/color.dart';
 import 'package:chat_lb/util/string.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 class ConfirmChangeEmailPage extends StatefulWidget {
   final String email;
@@ -68,28 +64,10 @@ class _ConfirmChangeEmailPageState extends State<ConfirmChangeEmailPage> {
                 fontSize: 14, color: Color(AppColors.primaryTextColor))));
   }
 
-  Future<void> _changeEmail() async {
-    FocusScope.of(context).unfocus();
-    EasyLoading.show();
-    try {
-      final params = {"email": widget.email};
-      final response = await ApiService.updateUser(params);
-      if (response.code != 200) {
-        _errorChangeMessage = response.message;
-        return;
-      }
-      Navigator.pop(context, true);
-    } catch (e) {
-      print(e.toString());
-      EasyLoading.dismiss();
-    }
-  }
-
   Widget _submitButton() {
     return FlatButton(
       onPressed: () {
-        _errorChangeMessage = "";
-        _changeEmail();
+        Navigator.pop(context, true);
       },
       padding: EdgeInsets.only(left: 32, right: 32, top: 8, bottom: 8),
       child: Text("完了",
@@ -134,11 +112,6 @@ class _ConfirmChangeEmailPageState extends State<ConfirmChangeEmailPage> {
         ),
       ),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
   }
 
   @override

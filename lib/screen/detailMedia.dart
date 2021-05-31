@@ -8,7 +8,6 @@ import 'package:ext_storage/ext_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class DetailMediaPage extends StatefulWidget {
   DetailMediaPage({Key key, this.messageModel, this.platform, this.userId})
@@ -23,13 +22,10 @@ class DetailMediaPage extends StatefulWidget {
 }
 
 class _DetailMediaPageState extends State<DetailMediaPage> {
-  bool _permissionReady = false;
-  String _localPath = "";
 
   @override
   void initState() {
     super.initState();
-    _configDownload();
   }
 
   @override
@@ -104,7 +100,7 @@ class _DetailMediaPageState extends State<DetailMediaPage> {
                   child: Container(
                     alignment: Alignment.center,
                     child: Text(
-                      '${widget.messageModel.sender()?.name}　' +
+                      '${widget.messageModel.sender?.name}　' +
                           widget.messageModel.toFullTime(),
                       style: TextStyle(
                           fontSize: 14, color: Colors.white.withOpacity(0.6)),
@@ -134,7 +130,7 @@ class _DetailMediaPageState extends State<DetailMediaPage> {
             Spacer(),
             InkWell(
               onTap: () {
-                _onTapDownload();
+
               },
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -154,11 +150,6 @@ class _DetailMediaPageState extends State<DetailMediaPage> {
         ),
       ),
     );
-  }
-
-  void _configDownload() async {
-    _permissionReady = false;
-    _prepare();
   }
 
   Future<void> _showAlertMessage(String message) async {
@@ -186,71 +177,5 @@ class _DetailMediaPageState extends State<DetailMediaPage> {
         );
       },
     );
-  }
-
-  Future<bool> _checkPermission() async {
-    if (widget.platform == TargetPlatform.android) {
-      final status = await Permission.storage.status;
-      if (status != PermissionStatus.granted) {
-        final result = await Permission.storage.request();
-        if (result == PermissionStatus.granted) {
-          return true;
-        }
-      } else {
-        return true;
-      }
-    } else {
-      return true;
-    }
-    return false;
-  }
-
-  Future<Null> _prepare() async {
-    _permissionReady = await _checkPermission();
-
-    _localPath = (await _findLocalPath()) +
-        Platform.pathSeparator +
-        Strings.downloadFolder;
-
-    final savedDir = Directory(_localPath);
-    bool hasExisted = await savedDir.exists();
-    if (!hasExisted) {
-      savedDir.create();
-    }
-  }
-
-  Future<String> _findLocalPath() async {
-    if (widget.platform == TargetPlatform.android) {
-      return await ExtStorage.getExternalStorageDirectory();
-    } else {
-      final directory = await getApplicationDocumentsDirectory();
-      return directory.path;
-    }
-  }
-
-  void _onTapDownload() {
-    if (!_permissionReady) {
-      _checkPermission();
-      return;
-    }
-    _requestDownload(
-        widget.messageModel.downloadLink(), widget.messageModel.filesName());
-  }
-
-  void _requestDownload(String link, String fileName) async {
-    if (EasyLoading.isShow) {
-      return;
-    }
-    EasyLoading.show();
-    final status = await ApiService.downloadFile(
-        Uri.encodeFull(link), fileName, _localPath);
-    setState(() {
-      EasyLoading.dismiss();
-      if (status) {
-        _showAlertMessage(Strings.downloadSuccess);
-      } else {
-        _showAlertMessage(Strings.downloadFailed);
-      }
-    });
   }
 }

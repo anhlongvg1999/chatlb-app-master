@@ -29,7 +29,7 @@ class ReceiverMessageWidget extends StatelessWidget {
               padding: const EdgeInsets.only(left: 8.0, right: 8.0, top: 8.0),
               child: Row(children: [
                 Text(
-                  '${model.sender()?.name}   ',
+                  '${model.sender?.name}   ',
                   style: TextStyle(
                       fontSize: 12, color: Colors.black.withOpacity(0.6)),
                 ),

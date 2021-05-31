@@ -69,6 +69,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     final email = _textEmailController.text;
     FocusScope.of(context).unfocus();
     if (email.isNotEmpty) {
+      if (!email.isValidEmail()) {
+        _errorEmailMessage = Strings.pleaseInputEmail;
+        return;
+      }
       final params = {
         'email': email
       };
@@ -76,6 +80,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       final response = await ApiService.forgot(params);
       setState(() {
         EasyLoading.dismiss();
+      });
+      setState(() {
         if (response.code == 200) {
           isSendEmail = true;
         } else {
@@ -83,7 +89,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         }
       });
     } else {
-      _errorEmailMessage = "Please input email";
+      _errorEmailMessage = Strings.pleaseInputEmail;
     }
   }
 
@@ -110,7 +116,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     return Container(
       alignment: Alignment.center,
       child: Text(
-        'メール内URLをクリックして \n 新しいパスワードを設定してください。',
+        '新しいパスワードが再発行されました。 \nログイン画面に戻って、新しいパスワードでログインして下さい。',
         textAlign: TextAlign.center,
         style:
             TextStyle(fontSize: 14, color: Color(AppColors.primaryTextColor)),
@@ -118,11 +124,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  _gotoRegister() {
+  _gotoLogin() {
     Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-            builder: (context) => RegisterFirstPage(
+            builder: (context) => LoginPage(
                   platform: widget.platform,
                 )),
         (route) => false);
@@ -131,7 +137,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   Widget _registerUser() {
     return InkWell(
         onTap: () {
-          _gotoRegister();
+          _gotoLogin();
         },
         child: Container(
           alignment: Alignment.center,

@@ -10,6 +10,7 @@ import 'package:chat_lb/util/string.dart';
 import 'package:device_info/device_info.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 class LoginPage extends StatefulWidget {
@@ -92,6 +93,21 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _login() async {
     final email = _textEmailController.text;
     final pass = _textPassController.text;
+
+    if (pass.isEmpty || !pass.isValidPassword()) {
+      setState(() {
+        _errorMessage = Strings.passwordWrongFormat;
+      });
+      return;
+    }
+
+    if (email.isEmpty || !email.isValidEmail()) {
+      setState(() {
+        _errorMessage = Strings.pleaseInputEmail;
+      });
+      return;
+    }
+
     final pushToken = await AppPrefs.share().getPushToken() ?? "";
     final params = {
       'email': email,
@@ -108,13 +124,15 @@ class _LoginPageState extends State<LoginPage> {
         if (response.code == 200) {
           AppPrefs.share().saveToken(response.data.token);
           AppPrefs.share().saveUser(response.data);
+          AppPrefs.share().savePassword(pass);
           Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
-                  builder: (context) => HomePage(
+                  builder: (context) =>
+                      HomePage(
                         platform: widget.platform,
                       )),
-              (route) => false);
+                  (route) => false);
         } else {
           _errorMessage = response.message ?? Strings.systemError;
         }
@@ -345,9 +363,16 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
+    removeBadge();
     initPlatformState();
+  }
+
+  removeBadge() async {
+    if (await FlutterAppBadger.isAppBadgeSupported() == true) {
+      FlutterAppBadger.updateBadgeCount(0);
+      FlutterAppBadger.removeBadge();
+    }
   }
 
   @override

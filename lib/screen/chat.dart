@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:chat_lb/model/messageModel.dart';
@@ -9,10 +8,9 @@ import 'package:chat_lb/screen/video.dart';
 import 'package:chat_lb/service/apiService.dart';
 import 'package:chat_lb/util/string.dart';
 import 'package:chat_lb/widget/categoryMessageWidget.dart';
-import 'package:ext_storage/ext_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_app_badger/flutter_app_badger.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ChatPage extends StatefulWidget {
@@ -31,66 +29,25 @@ class _ChatPageState extends State<ChatPage> {
   var _messageList = <MessageModel>[];
   var _currentPage = 1;
   var _endOfHistory = false;
-  var _isLoading = false;
-  bool _permissionReady = false;
-  String _localPath = "";
 
   @override
   void initState() {
     super.initState();
     _loadHistories();
-    _configDownload();
   }
 
-  void _configDownload() async {
-    _isLoading = true;
-    _permissionReady = false;
-
-    _prepare();
-  }
-
-  Future<bool> _checkPermission() async {
-    if (widget.platform == TargetPlatform.android) {
-      final status = await Permission.storage.status;
-      if (status != PermissionStatus.granted) {
-        final result = await Permission.storage.request();
-        if (result == PermissionStatus.granted) {
-          return true;
+  _getUnRead() async {
+    try {
+      final response = await ApiService.getUnread();
+      if (response.code == 200) {
+        final _number = response.data;
+        if (await FlutterAppBadger.isAppBadgeSupported() == true) {
+          FlutterAppBadger.updateBadgeCount(_number);
         }
-      } else {
-        return true;
       }
-    } else {
-      return true;
+    } catch (e) {
+      print(e.toString());
     }
-    return false;
-  }
-
-  Future<String> _findLocalPath() async {
-    if (widget.platform == TargetPlatform.android) {
-      return await ExtStorage.getExternalStorageDirectory();
-    } else {
-      final directory = await getApplicationDocumentsDirectory();
-      return directory.path;
-    }
-  }
-
-  Future<Null> _prepare() async {
-    _permissionReady = await _checkPermission();
-
-    _localPath = (await _findLocalPath()) +
-        Platform.pathSeparator +
-        Strings.downloadFolder;
-
-    final savedDir = Directory(_localPath);
-    bool hasExisted = await savedDir.exists();
-    if (!hasExisted) {
-      savedDir.create();
-    }
-
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   Future<void> _showAlertMessage(String message) async {
@@ -122,6 +79,7 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _loadHistories() async {
     try {
+      EasyLoading.show();
       var response = await ApiService.getChatHistory(
         this.widget.topic.id,
         _currentPage,
@@ -129,6 +87,8 @@ class _ChatPageState extends State<ChatPage> {
       if (!mounted) {
         return;
       }
+      EasyLoading.dismiss();
+      _getUnRead();
       setState(() {
         if (response.code == 200) {
           if (_currentPage == 1) {
@@ -158,6 +118,10 @@ class _ChatPageState extends State<ChatPage> {
       }
       var currentMaxSize = _scrollController.position.maxScrollExtent;
       Timer.periodic(Duration(seconds: 1), (timer) {
+        if (!_scrollController.hasClients || _messageList.isEmpty) {
+          timer.cancel();
+          return;
+        }
         if (currentMaxSize != _scrollController.position.maxScrollExtent) {
           currentMaxSize = _scrollController.position.maxScrollExtent;
           _scrollToBottom();
@@ -188,9 +152,28 @@ class _ChatPageState extends State<ChatPage> {
   Widget getRowMessage(int position) {
     final _message = _messageList[position];
     return Align(
-      alignment: Alignment(-1, 0),
+      alignment: Alignment.topLeft,
       child: CategoryMessageWidget(position: position, messageModel: _message),
     );
+  }
+
+  _clickMessage(int position) async {
+    try {
+      final messageId = _messageList[position].id ?? "";
+      if (messageId.isEmpty) {
+        return;
+      }
+      var response = await ApiService.clickMessage(messageId);
+      if (response.code == 200) {
+        print("click message success: " + messageId);
+      } else {
+        print("click message faid: " + messageId);
+      }
+    } catch (e) {
+      setState(() {
+        _showAlertMessage(e.toString());
+      });
+    }
   }
 
   Widget _chatView() {
@@ -207,7 +190,9 @@ class _ChatPageState extends State<ChatPage> {
                     itemBuilder: (BuildContext context, int position) {
                       return GestureDetector(
                         child: getRowMessage(position),
-                        onTap: () {},
+                        onTap: () {
+                          _clickMessage(position);
+                        },
                       );
                     }),
                 onRefresh: () async {
@@ -239,11 +224,11 @@ class _ChatPageState extends State<ChatPage> {
     return hasNoImage
         ? Container(
             height: 0,
-            width: double.infinity,
+            width: MediaQuery.of(context).size.width,
           )
         : Container(
             height: height * 0.25,
-            width: double.infinity,
+            width: MediaQuery.of(context).size.width,
             color: Color(int.parse("0xFF7DB9FF")),
             child: InkWell(
               onTap: () async {
@@ -259,41 +244,25 @@ class _ChatPageState extends State<ChatPage> {
                       "${Strings.canNotOpenLink} ${widget.topic.imageUrl}");
                 }
               },
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  Expanded(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0, right: 8.0),
-                          child: FadeInImage.assetNetwork(
-                              image: widget.topic.getImageUrl(),
-                              placeholder: "assets/images/placeholder.jpg",
-                              fit: BoxFit.cover),
+                  FadeInImage.assetNetwork(
+                      height: height * 0.25,
+                      width: MediaQuery.of(context).size.width,
+                      image: !widget.topic.isImage()
+                          ? widget.topic.getThumbUrl()
+                          : widget.topic.getImageUrl(),
+                      placeholder: "assets/images/placeholder.jpg",
+                      fit: BoxFit.cover),
+                  widget.topic.isImage()
+                      ? Container()
+                      : Container(
+                          child: Icon(
+                            Icons.play_circle_fill,
+                            color: Colors.white,
+                          ),
                         ),
-                        widget.topic.isImage()
-                            ? Container()
-                            : Container(
-                                child: Icon(
-                                  Icons.play_circle_fill,
-                                  color: Colors.white,
-                                ),
-                              ),
-                      ],
-                    ),
-                  ),
-                  // Padding(
-                  //   padding: const EdgeInsets.all(8.0),
-                  //   child: Text(
-                  //     "画像や、動作の軽い動画などを設置",
-                  //     style: TextStyle(
-                  //         fontSize: 16,
-                  //         fontWeight: FontWeight.bold,
-                  //         color: Colors.white),
-                  //   ),
-                  // )
                 ],
               ),
             ));
@@ -325,23 +294,21 @@ class _ChatPageState extends State<ChatPage> {
         ],
       ),
       body: SafeArea(
-        child: _isLoading
-            ? Container()
-            : Container(
-                child: Stack(
-                  fit: StackFit.loose,
-                  children: <Widget>[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        _chatView(),
-                        Divider(height: 1, color: Colors.black26),
-                        _bottomChat(height),
-                      ],
-                    ),
-                  ],
-                ),
+        child: Container(
+          child: Stack(
+            fit: StackFit.loose,
+            children: <Widget>[
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _chatView(),
+                  Divider(height: 1, color: Colors.black26),
+                  _bottomChat(height),
+                ],
               ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:chat_lb/model/pageTopicModel.dart';
+import 'package:chat_lb/model/topicModel.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 import 'pageMessageModel.dart';
@@ -29,6 +30,8 @@ class ApiResponse<T> {
     if (json is Map<String, dynamic>) {
       if (T == UserModel) {
         return UserModel.fromJson(json) as T;
+      } if (T == TopicModel) {
+        return TopicModel.fromJson(json) as T;
       } else if (T.toString().contains("PageMessageModel")) {
         return PageMessageModel.fromJson(json) as T;
       } else if (T.toString().contains("PageTopicModel")) {

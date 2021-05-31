@@ -1,4 +1,3 @@
-import 'package:chat_lb/model/userTopicModel.dart';
 import 'package:chat_lb/util/apiUrl.dart';
 import 'package:intl/intl.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -25,8 +24,7 @@ class NavigateModel {
   @JsonKey(name: 'updated_at')
   int updatedAt;
 
-  NavigateModel(
-      this.id, this.createdAt, this.name, this.url, this.image, this.updatedAt);
+  NavigateModel(this.id,this.createdAt, this.name,  this.url, this.image, this.updatedAt);
 
   factory NavigateModel.fromJson(Map<String, dynamic> json) =>
       _$NavigateModelFromJson(json);
@@ -51,10 +49,11 @@ class NavigateModel {
   }
 
   String imageUrl() {
-    return (image ?? "");
+    //return ApiURL.API + (image ?? "");
+    return image ?? "";
   }
 
   String linkUrl() {
-    return (url ?? "");
+    return url ?? "";
   }
 }

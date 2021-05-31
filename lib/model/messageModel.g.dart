@@ -16,7 +16,8 @@ MessageModel _$MessageModelFromJson(Map<String, dynamic> json) {
     json['content'] as String,
     json['topic_id'] as String,
     json['created_at'] as int,
-    MessageModel._dataListSenderFromJson(json['sender']),
+    MessageModel._dataListSenderFromJson(json['users']),
+    MessageModel._dataSenderFromJson(json['sender']),
     json['updated_at'] as int,
     MessageModel._dataListFileFromJson(json['files']),
   )..fileUrl = json['file'] as String;
@@ -33,7 +34,8 @@ Map<String, dynamic> _$MessageModelToJson(MessageModel instance) =>
       'file': instance.fileUrl,
       'topic_id': instance.topicId,
       'created_at': instance.createdAt,
-      'sender': instance.senders,
+      'users': instance.users,
+      'sender': instance.sender,
       'updated_at': instance.updatedAt,
       'files': instance.files,
     };

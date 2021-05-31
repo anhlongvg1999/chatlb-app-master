@@ -1,60 +1,55 @@
 import 'dart:async';
 
 import 'package:chat_lb/model/deeplinkModel.dart';
+import 'package:chat_lb/screen/splash.dart';
+import 'package:chat_lb/service/apiService.dart';
+import 'package:chat_lb/service/appPrefs.dart';
 import 'package:chat_lb/util/color.dart';
 import 'package:chat_lb/util/string.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:chat_lb/screen/splash.dart';
-import 'package:chat_lb/service/appPrefs.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
-import 'package:uni_links/uni_links.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-
+  print("_firebaseMessagingBackgroundHandler: $message");
   if (message.data != null) {
     // Handle data message
     try {
-      print("_firebaseMessagingBackgroundHandler: $message");
-      print('Message data: ${message.data}');
+      print('BackgroundHandler Message data: ${message.data}');
       final Map<String, dynamic> data = message.data;
       if (data.containsKey('unread_number')) {
-        final numberUnread = data['unread_number'];
+        final numberUnread = data['unread_number'] ?? 0;
         if (await FlutterAppBadger.isAppBadgeSupported() == true) {
           FlutterAppBadger.updateBadgeCount(numberUnread);
+        }
+      }
+
+      if (data.containsKey('message_id')) {
+        final messageId = data['message_id'];
+        if (messageId.isEmpty) {
+          return;
+        }
+        var response = await ApiService.receiveMessage(messageId);
+        if (response.code == 200) {
+          print("receive message success: " + messageId);
+        } else {
+          print("receive message fail: " + messageId);
         }
       }
     } catch (e) {}
   }
 }
 
-/// Create a [AndroidNotificationChannel] for heads up notifications
-const AndroidNotificationChannel channel = AndroidNotificationChannel(
-  'high_importance_channel', // id
-  'High Importance Notifications', // title
-  'This channel is used for important notifications.', // description
-  enableVibration: true,
-  playSound: true,
-);
-
-/// Initalize the [FlutterLocalNotificationsPlugin] package.
-FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
-  await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(channel);
 
   /// Update the iOS foreground notification presentation options to allow
   /// heads up notifications.
@@ -95,7 +90,7 @@ class MyApp extends StatefulWidget {
 
 class _MyApp extends State<MyApp> {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  FlutterLocalNotificationsPlugin localNotification;
+
   _requestPushPermission() async {
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
       alert: true,
@@ -113,85 +108,138 @@ class _MyApp extends State<MyApp> {
     print('User granted permission: ${settings.authorizationStatus}');
   }
 
-  Future _showNotification(String title, String descipstion) async {
-    var androidDetails = new AndroidNotificationDetails(
-        "channelId", "Local Notification", "this is description",
-        importance: Importance.high);
-    var iosDetails = new IOSNotificationDetails();
-    var generalNotificationDetails =
-        new NotificationDetails(android: androidDetails, iOS: iosDetails);
-    await localNotification.show(0, title.toString(), descipstion.toString(),
-        generalNotificationDetails);
-  }
-
-  _configureMessaging() {
-    var androidInitialize =
-        new AndroidInitializationSettings('ic_notification');
-    var iOSIntialize = new IOSInitializationSettings();
-    var initialzationSettings = new InitializationSettings(
-        android: androidInitialize, iOS: iOSIntialize);
-    localNotification = new FlutterLocalNotificationsPlugin();
-    localNotification.initialize(initialzationSettings);
+  _configureMessaging() async {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       print('Got a message whilst in the foreground!');
-      print('Message data: ${message.data}');
-      if (message.data != null) {
-        print('Message data: ${message.data}');
-        final Map<String, dynamic> data = message.data;
-        // if (data.containsKey('unread_number')) {
-        //   final numberUnread = data['unread_number'];
-        //   print('00000000000000000000' + numberUnread);
-        //   int numberUnreadInt = int.parse(numberUnread);
-        //   if (await FlutterAppBadger.isAppBadgeSupported() == true &&
-        //       numberUnreadInt != -1) {
-        //     FlutterAppBadger.updateBadgeCount(numberUnreadInt);
-        //   }
-        // }
-        var title = data['title'].toString();
-        var descipstion = data['content'].toString();
-        await _showNotification(title, descipstion);
+      if (message.notification != null) {
+        Fluttertoast.showToast(
+            msg: message.notification.body,
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+            fontSize: 16.0
+        );
       }
 
-      // if (message.notification != null) {
-      //   print('Message also contained a notification: ${message.notification}');
-      // }
-    });
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('Got a message whilst in the foreground!');
-      print('Message data: ${message.data}');
+      if (message.data != null) {
+        print('onMessage Message data: ${message.data}');
+        final Map<String, dynamic> data = message.data;
+        if (data.containsKey('unread_number')) {
+          final numberUnread = data['unread_number'] ?? 0;
+          if (await FlutterAppBadger.isAppBadgeSupported() == true) {
+            FlutterAppBadger.updateBadgeCount(numberUnread);
+          }
+        }
+
+        if (data.containsKey('topic_id')) {
+          final topicId = data['topic_id'];
+          Provider.of<DeepLinkModel>(context, listen: false)
+              .updateNotificationOpenApp(topicId);
+        }
+
+        if (data.containsKey('message_id')) {
+          final messageId = data['message_id'];
+          if (messageId.isEmpty) {
+            return;
+          }
+          var response = await ApiService.receiveMessage(messageId);
+          if (response.code == 200) {
+            print("receive message success: " + messageId);
+          } else {
+            print("receive message fail: " + messageId);
+          }
+        }
+      }
 
       if (message.notification != null) {
         print('Message also contained a notification: ${message.notification}');
       }
     });
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
+      print('Got a message whilst in the foreground!');
+
+      if (message.notification != null) {
+        print('Message also contained a notification: ${message.notification}');
+      }
+
+      if (message.data != null) {
+        print('MessageOpened Message data: ${message.data}');
+        final Map<String, dynamic> data = message.data;
+        if (data.containsKey('unread_number')) {
+          final numberUnread = data['unread_number'] ?? 0;
+          if (await FlutterAppBadger.isAppBadgeSupported() == true) {
+            FlutterAppBadger.updateBadgeCount(numberUnread);
+          }
+        }
+        if (data.containsKey('topic_id')) {
+          final topicId = data['topic_id'];
+          Provider.of<DeepLinkModel>(context, listen: false)
+              .updateTopicNotification(topicId);
+        }
+
+        if (data.containsKey('message_id')) {
+          final messageId = data['message_id'];
+          if (messageId.isEmpty) {
+            return;
+          }
+          var response = await ApiService.receiveMessage(messageId);
+          if (response.code == 200) {
+            print("receive message success: " + messageId);
+          } else {
+            print("receive message fail: " + messageId);
+          }
+        }
+      }
+    });
+
+    RemoteMessage initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+
+    // If the message also contains a data property with a "type" of "chat",
+    // navigate to a chat screen
+    if (initialMessage?.data != null) {
+      print('initialMessage Message data: ${initialMessage.data}');
+      final Map<String, dynamic> data = initialMessage.data;
+      if (data.containsKey('topic_id')) {
+        final topicId = data['topic_id'];
+        Provider.of<DeepLinkModel>(context, listen: false)
+            .setTopicNotification(topicId);
+      }
+    }
   }
 
-  StreamSubscription _sub;
-
-  initPlatformStateForStringUniLinks() async {
-    // Attach a listener to the links stream
-    _sub = getLinksStream().listen((String link) {
-      if (!mounted) return;
-      print('listen link: $link');
-      Provider.of<DeepLinkModel>(context, listen: false).updateDeepLink(link);
-    }, onError: (err) {
-      if (!mounted) return;
-      print('Failed to get latest link: $err.');
+  void _initDynamicLinks() async {
+    FirebaseDynamicLinks.instance.onLink(
+        onSuccess: (PendingDynamicLinkData dynamicLink) async {
+      final Uri deepLink = dynamicLink?.link;
+      print('deepLink uri: ' + deepLink.path + ' --- ' + deepLink.query);
+      if (deepLink.query != null && deepLink.query.isNotEmpty) {
+        Provider.of<DeepLinkModel>(context, listen: false)
+            .updateDeepLink(deepLink.query);
+      }
+    }, onError: (OnLinkErrorException e) async {
+      print('onLinkError');
+      print(e.message);
     });
 
-    // Attach a second listener to the stream
-    getLinksStream().listen((String link) {
-      print('got link: $link');
-      Provider.of<DeepLinkModel>(context, listen: false).updateDeepLink(link);
-    }, onError: (err) {
-      print('got err: $err');
-    });
+    final PendingDynamicLinkData data =
+        await FirebaseDynamicLinks.instance.getInitialLink();
+    final Uri deepLink = data?.link;
+
+    if (deepLink != null) {
+      print('deepLink: ' + deepLink.path + ' --- ' + deepLink.query);
+      if (deepLink.query != null && deepLink.query.isNotEmpty) {
+        Provider.of<DeepLinkModel>(context, listen: false)
+            .updateDeepLink(deepLink.query);
+      }
+    }
   }
 
   @override
   void initState() {
     super.initState();
-    initPlatformStateForStringUniLinks();
+    _initDynamicLinks();
     _configureMessaging();
     _requestPushPermission();
     _firebaseMessaging.getToken().then((String token) {
@@ -214,12 +262,6 @@ class _MyApp extends State<MyApp> {
         ),
         home: MyAppPage(platform: platform),
         builder: EasyLoading.init());
-  }
-
-  @override
-  void dispose() {
-    if (_sub != null) _sub.cancel();
-    super.dispose();
   }
 }
 

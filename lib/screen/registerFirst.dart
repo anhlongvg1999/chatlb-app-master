@@ -46,6 +46,10 @@ class _RegisterFirstPageState extends State<RegisterFirstPage> {
     final email = _textEmailController.text;
     FocusScope.of(context).unfocus();
     if (email.isNotEmpty) {
+      if (!email.isValidEmail()) {
+        _errorEmailMessage = Strings.pleaseInputEmail;
+        return;
+      }
       final socketId = SocketService.shared().getSocketId();
       final params = {
         'email': email,
@@ -69,6 +73,8 @@ class _RegisterFirstPageState extends State<RegisterFirstPage> {
           _errorEmailMessage = response.message ?? Strings.systemError;
         }
       });
+    } else {
+      _errorEmailMessage = Strings.noInputEmail;
     }
 }
 

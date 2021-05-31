@@ -2,6 +2,7 @@ import 'package:chat_lb/screen/login.dart';
 import 'package:chat_lb/screen/registerFirst.dart';
 import 'package:chat_lb/screen/registerSeconds.dart';
 import 'package:chat_lb/service/apiService.dart';
+import 'package:chat_lb/service/appPrefs.dart';
 import 'package:chat_lb/util/color.dart';
 import 'package:chat_lb/util/string.dart';
 import 'package:flutter/material.dart';
@@ -86,30 +87,58 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       final password = _textChangeController.text;
       final confirmPassword = _textConfirmController.text;
       if (password.isEmpty) {
-        _errorChangeMessage = Strings.pleaseInputPassword;
+        setState(() {
+          _errorChangeMessage = Strings.pleaseInputPassword;
+        });
         return;
       }
       if (confirmPassword.isEmpty) {
-        _errorConfirmMessage = Strings.pleaseInputPassword;
+        setState(() {
+          _errorConfirmMessage = Strings.pleaseInputPassword;
+        });
         return;
       }
+
+      if (!password.isValidPassword()) {
+        setState(() {
+          _errorChangeMessage = Strings.passwordWrongFormat;
+          _errorConfirmMessage = "";
+        });
+        return;
+      }
+      if (!confirmPassword.isValidPassword()) {
+        setState(() {
+          _errorConfirmMessage = Strings.passwordWrongFormat;
+          _errorChangeMessage = "";
+        });
+        return;
+      }
+
       if (password != confirmPassword) {
-        _errorConfirmMessage = Strings.passwordNotMath;
+        setState(() {
+          _errorConfirmMessage = Strings.passwordNotMath;
+        });
         return;
       }
       EasyLoading.show();
       final params = {"password": password};
       final response = await ApiService.updateUser(params);
+      setState(() {
+        EasyLoading.dismiss();
+      });
       if (response.code != 200) {
         _errorChangeMessage = response.message;
         return;
       }
+      AppPrefs.share().savePassword(password);
       setState(() {
         isChangePassSuccess = true;
       });
     } catch (e) {
       print(e.toString());
-      EasyLoading.dismiss();
+      setState(() {
+        EasyLoading.dismiss();
+      });
     }
   }
 
@@ -211,7 +240,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               Navigator.pop(context, true);
             },
             padding: EdgeInsets.only(left: 32, right: 32, top: 12, bottom: 12),
-            child: Text("退会する",
+            child: Text("戻る",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             textColor: Colors.white,
             color: Color(int.parse("0xFF91AAFF")),

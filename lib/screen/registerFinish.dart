@@ -35,7 +35,7 @@ class _RegisterFinishPageState extends State<RegisterFinishPage> {
       margin: EdgeInsets.symmetric(vertical: 10),
       child: TextField(
           controller: _textPasswordController,
-          obscureText: false,
+          obscureText: true,
           style: TextStyle(color: Color(AppColors.primaryTextColor)),
           cursorColor: Color(AppColors.primaryColor),
           decoration: InputDecoration(
@@ -54,7 +54,7 @@ class _RegisterFinishPageState extends State<RegisterFinishPage> {
       margin: EdgeInsets.symmetric(vertical: 10),
       child: TextField(
           controller: _textConfirmPasswordController,
-          obscureText: false,
+          obscureText: true,
           style: TextStyle(color: Color(AppColors.primaryTextColor)),
           cursorColor: Color(AppColors.primaryColor),
           decoration: InputDecoration(
@@ -72,8 +72,18 @@ class _RegisterFinishPageState extends State<RegisterFinishPage> {
     try {
       final password = _textPasswordController.text;
       final confirmPassword = _textConfirmPasswordController.text;
+      if (!password.isValidPassword()) {
+        _errorPasswordMessage = Strings.passwordWrongFormat;
+        _errorConfirmMessage = "";
+        return;
+      }
+      if (!confirmPassword.isValidPassword()) {
+        _errorConfirmMessage = Strings.passwordWrongFormat;
+        _errorPasswordMessage = "";
+        return;
+      }
       if (password != confirmPassword) {
-        _errorConfirmMessage = "password not math";
+        _errorConfirmMessage = Strings.passwordNotMath;
         _errorPasswordMessage = "";
         return;
       }
@@ -94,6 +104,7 @@ class _RegisterFinishPageState extends State<RegisterFinishPage> {
         if (response.code == 200) {
           AppPrefs.share().saveToken(response.data.token);
           AppPrefs.share().saveUser(response.data);
+          AppPrefs.share().savePassword(pass);
           Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(

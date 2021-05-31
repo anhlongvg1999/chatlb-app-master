@@ -48,15 +48,13 @@ class SocketService {
     _socket.onDisconnect((_) => print('disconnect'));
     _socket.on(Events.authentication, (data) => {print(data)});
     _socket.on(Events.receiveMessage, (data) {
-      String jsonString =
-          (data is List) ? jsonEncode(data.first) : jsonEncode(data);
+      String jsonString = (data is List) ? jsonEncode(data.first) : jsonEncode(data);
       print(Events.receiveMessage + jsonString);
       final dataJson = jsonDecode(jsonString);
       _onReceiveMessage?.call(false, MessageModel.fromJson(dataJson));
     });
     _socket.on(Events.sendMessage, (data) {
-      String jsonString =
-          (data is List) ? jsonEncode(data.first) : jsonEncode(data);
+      String jsonString = (data is List) ? jsonEncode(data.first) : jsonEncode(data);
       print(Events.sendMessage + jsonString);
       final dataJson = jsonDecode(jsonString);
       _onReceiveMessage?.call(true, MessageModel.fromJson(dataJson));
@@ -65,6 +63,14 @@ class SocketService {
       String jsonString =
           (data is List) ? jsonEncode(data.first) : jsonEncode(data);
       print(Events.confirmRegisterEmail + jsonString);
+      final dataJson = jsonDecode(jsonString);
+      _onSocketMessage?.call(SocketResponse.fromJson(dataJson));
+    });
+
+    _socket.on(Events.confirmChangeEmail, (data) {
+      String jsonString =
+      (data is List) ? jsonEncode(data.first) : jsonEncode(data);
+      print(Events.confirmChangeEmail + jsonString);
       final dataJson = jsonDecode(jsonString);
       _onSocketMessage?.call(SocketResponse.fromJson(dataJson));
     });

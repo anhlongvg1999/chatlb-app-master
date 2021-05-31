@@ -31,7 +31,8 @@ class CategoryWidget extends StatelessWidget {
   }
 
   Widget _notificationView() {
-    final _hasUnread = (topicModel.unreadMessage ?? 0) > 0;
+    final number = (topicModel.unreadMessage ?? 0);
+    final _hasUnread = number > 0;
     return Container(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -41,8 +42,7 @@ class CategoryWidget extends StatelessWidget {
               child: _hasUnread
                   ? Container(
                       color: Colors.red,
-                      child: Text(
-                        topicModel.unreadMessage?.toString() ?? "",
+                      child: Text(number > 99 ? "99+" : number.toString(),
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,

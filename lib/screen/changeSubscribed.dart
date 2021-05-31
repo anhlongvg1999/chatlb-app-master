@@ -19,6 +19,7 @@ class _ChangeSubscribedPageState extends State<ChangeSubscribedPage> {
   List<TopicModel> _topicList = [];
   var _currentPage = 1;
   var _endOfHistory = false;
+  var _isLoad = false;
 
   @override
   void initState() {
@@ -29,14 +30,20 @@ class _ChangeSubscribedPageState extends State<ChangeSubscribedPage> {
   _loadTopic() async {
     try {
       EasyLoading.show();
+      setState(() {
+        _isLoad = true;
+      });
       var response =
-          await ApiService.getListTopic(page: _currentPage, getSubscribe: "");
+          await ApiService.getListTopic(page: _currentPage, getSubscribe: "no");
+      setState(() {
+        _isLoad = false;
+        EasyLoading.dismiss();
+      });
       if (!mounted) {
         return;
       }
       _topicList.addAll(response.data.objects.reversed);
       setState(() {
-        EasyLoading.dismiss();
         if (response.code == 200) {
           _endOfHistory = response.data.objects.length < 10;
         } else {
@@ -45,6 +52,7 @@ class _ChangeSubscribedPageState extends State<ChangeSubscribedPage> {
       });
     } catch (e) {
       setState(() {
+        _isLoad = false;
         EasyLoading.dismiss();
         _showAlertMessage(e.toString());
       });
@@ -89,37 +97,42 @@ class _ChangeSubscribedPageState extends State<ChangeSubscribedPage> {
     try {
       EasyLoading.show();
       final List<String> subscribeList = [];
-      final List<String> unsubscribeList = [];
+      //final List<String> unsubscribeList = [];
       _topicList.forEach((element) {
-        if ((element.isSubcribe ?? true)) {
+        if ((element.isSubscribe ?? true)) {
           subscribeList.add(element.id);
-        } else {
-          unsubscribeList.add(element.id);
         }
+        // else {
+        //   unsubscribeList.add(element.id);
+        // }
       });
       final params = {"subscribe": true, "topic_ids": subscribeList};
       var response = await ApiService.subscribe(params);
+      setState(() {
+        EasyLoading.dismiss();
+      });
       if (response.code != 200) {
         setState(() {
-          EasyLoading.dismiss();
           _showAlertMessage(response.message);
         });
         return;
       }
-      if (unsubscribeList.isNotEmpty) {
-        final params = {"subscribe": false, "topic_ids": unsubscribeList};
-        var responseUnsubscribed = await ApiService.subscribe(params);
-        if (responseUnsubscribed.code != 200) {
-          setState(() {
-            EasyLoading.dismiss();
-            _showAlertMessage(responseUnsubscribed.message);
-          });
-          return;
-        }
-      }
-      setState(() {
-        EasyLoading.dismiss();
-      });
+      // if (unsubscribeList.isNotEmpty) {
+      //   final params = {"subscribe": false, "topic_ids": unsubscribeList};
+      //   var responseUnsubscribed = await ApiService.subscribe(params);
+      //   setState(() {
+      //     EasyLoading.dismiss();
+      //   });
+      //   if (responseUnsubscribed.code != 200) {
+      //     setState(() {
+      //       _showAlertMessage(responseUnsubscribed.message);
+      //     });
+      //     return;
+      //   }
+      // }
+      // setState(() {
+      //   EasyLoading.dismiss();
+      // });
       Navigator.pop(context, true);
     } catch (e) {
       setState(() {
@@ -137,7 +150,7 @@ class _ChangeSubscribedPageState extends State<ChangeSubscribedPage> {
           _updateSubscribedTopic();
         },
         padding: EdgeInsets.only(left: 32, right: 32, top: 8, bottom: 8),
-        child: Text("退会する",
+        child: Text("再入会する",
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         textColor: Colors.white,
         color: Color(int.parse("0xFF6386FF")),
@@ -154,7 +167,7 @@ class _ChangeSubscribedPageState extends State<ChangeSubscribedPage> {
           },
           child: NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification scrollInfo) {
-              if (!_endOfHistory &&
+              if (!_isLoad && !_endOfHistory &&
                   scrollInfo.metrics.pixels ==
                       scrollInfo.metrics.maxScrollExtent) {
                 _currentPage += 1;
@@ -190,11 +203,11 @@ class _ChangeSubscribedPageState extends State<ChangeSubscribedPage> {
                   ),
                   label: topicModel.name,
                   value: true,
-                  groupValue: topicModel.isSubcribe ?? true,
+                  groupValue: topicModel.isSubscribe ?? true,
                   onCheck: () {
                     setState(() {
-                      _topicList[index].isSubcribe =
-                          !(topicModel.isSubcribe ?? true);
+                      _topicList[index].isSubscribe =
+                          !(topicModel.isSubscribe ?? true);
                     });
                   },
                 );

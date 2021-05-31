@@ -2,13 +2,11 @@ import 'dart:async';
 import 'dart:core';
 
 import 'package:chat_lb/screen/home.dart';
-import 'package:chat_lb/util/string.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:chat_lb/service/appPrefs.dart';
 import 'package:chat_lb/util/color.dart';
 
-import 'chat.dart';
 import 'login.dart';
 
 class SplashPage extends StatefulWidget {
@@ -45,17 +43,29 @@ class _SplashPageState extends State<SplashPage> {
             child: new Stack(fit: StackFit.expand, children: <Widget>[
       Container(
         decoration: new BoxDecoration(
-          color: Color(AppColors.primaryColor),
+          color: Color(AppColors.splashColor),
         ),
       ),
       Container(
           padding: const EdgeInsets.only(left: 32, right: 32),
           alignment: Alignment.center,
-          child: Text(Strings.appName,
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold)))
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/images/icon_app.png',
+                width: 200,
+                height: 200,
+              ),
+              Text(
+                "Cross Ch!",
+                style: TextStyle(
+                    fontSize: 24,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500),
+              )
+            ],
+          ))
     ])));
   }
 }

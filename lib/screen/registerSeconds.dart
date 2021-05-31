@@ -1,13 +1,16 @@
 import 'package:chat_lb/model/socketResponse.dart';
 import 'package:chat_lb/screen/login.dart';
 import 'package:chat_lb/screen/registerFinish.dart';
+import 'package:chat_lb/service/apiService.dart';
+import 'package:chat_lb/service/appPrefs.dart';
 import 'package:chat_lb/service/socketService.dart';
 import 'package:chat_lb/util/color.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 import 'forgotPassword.dart';
 
-class RegisterSecondsPage extends StatefulWidget {
+class RegisterSecondsPage extends StatefulWidget{
   final TargetPlatform platform;
   final String email;
 
@@ -17,7 +20,7 @@ class RegisterSecondsPage extends StatefulWidget {
   _RegisterSecondsPageState createState() => _RegisterSecondsPageState();
 }
 
-class _RegisterSecondsPageState extends State<RegisterSecondsPage> {
+class _RegisterSecondsPageState extends State<RegisterSecondsPage> with WidgetsBindingObserver {
   Widget _messageAlert() {
     return Container(
         alignment: Alignment.center,
@@ -32,9 +35,10 @@ class _RegisterSecondsPageState extends State<RegisterSecondsPage> {
         context,
         MaterialPageRoute(
             builder: (context) => ForgotPasswordPage(
-                  platform: widget.platform,
-                )),
-        (route) => false);
+              platform: widget.platform,
+            )),
+            (route) => false);
+
   }
 
   Widget _forgotPassword() {
@@ -61,6 +65,7 @@ class _RegisterSecondsPageState extends State<RegisterSecondsPage> {
           ),
         ));
   }
+
 
   _gotoLogin() {
     Navigator.pushAndRemoveUntil(
@@ -111,20 +116,68 @@ class _RegisterSecondsPageState extends State<RegisterSecondsPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     SocketService.shared().onSocketMessage = _onSocketMessage;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    print('didChangeAppLifecycleState ${state.toString()}');
+    setState(() {
+      if (AppLifecycleState.resumed == state) {
+        _registerUser();
+      }
+    });
+  }
+
+  Future<void> _registerUser() async {
+    try {
+      EasyLoading.show();
+      final email = this.widget.email;
+      final socketId = SocketService.shared().getSocketId();
+      final params = {
+        'email': email,
+        'socket_id': socketId
+      };
+      final response = await ApiService.verifyRegister(params);
+      setState(() {
+        EasyLoading.dismiss();
+        if (response.code == 200) {
+          Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => RegisterFinishPage(
+                    platform: widget.platform,
+                    email:  this.widget.email,
+                  )),
+                  (route) => false);
+        }
+      });
+    } catch (e) {
+      setState(() {
+          EasyLoading.dismiss();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    SocketService.shared().disconnect();
+    super.dispose();
   }
 
   void _onSocketMessage(SocketResponse model) {
     setState(() {
-      if (model.success && this.widget.email == model.email) {
+      if(model.success && this.widget.email == model.email) {
         Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
                 builder: (context) => RegisterFinishPage(
-                      platform: widget.platform,
-                      email: model.email,
-                    )),
-            (route) => false);
+                  platform: widget.platform,
+                  email: model.email,
+                )),
+                (route) => false);
       }
     });
   }

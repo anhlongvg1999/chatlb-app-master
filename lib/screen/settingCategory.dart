@@ -70,16 +70,17 @@ class _SettingCategoryPageState extends State<SettingCategoryPage> {
       EasyLoading.show();
       final params = {"receive": newReceive, "topic_id": widget.topic.id};
       final response = await ApiService.updateReceiveNotification(params);
+      setState(() {
+        EasyLoading.dismiss();
+      });
       if (response.code != 200) {
         _showAlertMessage(response.message);
         setState(() {
-          EasyLoading.dismiss();
           _character = !newReceive ? SingingCharacter.ON : SingingCharacter.OFF;
         });
         return;
       }
       setState(() {
-        EasyLoading.dismiss();
         widget.topic.receive = newReceive;
       });
     } catch (e) {
@@ -101,13 +102,14 @@ class _SettingCategoryPageState extends State<SettingCategoryPage> {
         ]
       };
       final response = await ApiService.subscribe(params);
-      if (response.code != 200) {
+      setState(() {
         EasyLoading.dismiss();
+      });
+      if (response.code != 200) {
         _showAlertMessage(response.message);
         return;
       }
       setState(() {
-        EasyLoading.dismiss();
         Navigator.pop(context, true);
       });
     } catch (e) {

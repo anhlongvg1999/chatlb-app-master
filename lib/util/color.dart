@@ -4,8 +4,9 @@ class AppColors {
   static int hintTextColor = int.parse("0x5C707070");
   static int bgInputColor = int.parse("0xFFf5f5f5");
   static int senderColor = int.parse("0xFFededed");
-  static int receiverColor = int.parse("0xFFAAFFB8");
+  static int receiverColor = int.parse("0xFF8de055");
   static int errorTextColor = int.parse("0xFFff0000");
   static int errorBgColor = int.parse("0xFFfef7f6");
   static int errorBorderColor = int.parse("0xFFff0000");
+  static int splashColor = int.parse("0xFF64b058");
 }

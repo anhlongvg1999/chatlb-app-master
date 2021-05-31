@@ -6,10 +6,13 @@ import 'package:chat_lb/model/apiResponse.dart';
 import 'package:chat_lb/model/pageMessageModel.dart';
 import 'package:chat_lb/model/pageNavigateModel.dart';
 import 'package:chat_lb/model/pageTopicModel.dart';
+import 'package:chat_lb/model/topicModel.dart';
+import 'package:chat_lb/model/unreadResponse.dart';
 import 'package:chat_lb/model/uploadResponse.dart';
 import 'package:chat_lb/model/userModel.dart';
 import 'package:chat_lb/service/appPrefs.dart';
 import 'package:chat_lb/util/apiUrl.dart';
+import 'package:chat_lb/util/string.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 
@@ -32,10 +35,10 @@ class ApiService {
       } else {
         // If the server did not return a 200 OK response,
         // then throw an exception.
-        throw Exception('Failed to login');
+        return ApiResponse(response.statusCode, Strings.systemError, null);
       }
     } catch (e) {
-      throw Exception(e.toString());
+      return ApiResponse(500, Strings.systemError, null);
     }
   }
 
@@ -66,10 +69,10 @@ class ApiService {
       } else {
         // If the server did not return a 200 OK response,
         // then throw an exception.
-        throw Exception('Failed to get history');
+        return ApiResponse(response.statusCode, Strings.systemError, null);
       }
     } catch (e) {
-      throw Exception(e.toString());
+      return ApiResponse(500, Strings.systemError, null);
     }
   }
 
@@ -88,10 +91,10 @@ class ApiService {
       } else {
         // If the server did not return a 200 OK response,
         // then throw an exception.
-        throw Exception('Failed to logout');
+        return ApiResponse(response.statusCode, Strings.systemError, null);
       }
     } catch (e) {
-      throw Exception(e.toString());
+       return ApiResponse(500, Strings.systemError, null);
     }
   }
 
@@ -121,10 +124,10 @@ class ApiService {
       } else {
         // If the server did not return a 200 OK response,
         // then throw an exception.
-        throw Exception('Failed to upload');
+        return UploadResponse(response.statusCode, Strings.systemError, null);
       }
     } catch (e) {
-      throw Exception(e.toString());
+       return UploadResponse(500, Strings.systemError, null);
     }
   }
 
@@ -145,32 +148,36 @@ class ApiService {
       } else {
         // If the server did not return a 200 OK response,
         // then throw an exception.
-        throw Exception('Failed to me');
+        return ApiResponse(response.statusCode, Strings.systemError, null);
       }
     } catch (e) {
-      throw Exception(e.toString());
+       return ApiResponse(500, Strings.systemError, null);
     }
   }
 
   static Future<ApiResponse> updateUser(Map params) async {
     try {
       final token = await AppPrefs.share().getToken();
-      Map<String, String> header = {'Authorization': "Bearer $token"};
+      Map<String, String> header = {
+        'Authorization': "Bearer $token",
+        'Content-Type': "application/json"
+      };
       final json = jsonEncode(params);
-      final response =
-          await http.put(ApiURL.UPDATE_USER, headers: header, body: json);
+      print('update user params: ' + json);
+      final response = await http.put(ApiURL.UPDATE_USER, headers: header, body: json);
       if (response.statusCode == 200) {
         // If the server did return a 200 OK response,
         // then parse the JSON.
         final jsonBody = jsonDecode(response.body);
+        print('update user success: ' + jsonEncode(jsonBody));
         return ApiResponse.fromJson(jsonBody);
       } else {
         // If the server did not return a 200 OK response,
         // then throw an exception.
-        throw Exception('Failed to update user info');
+        return ApiResponse(response.statusCode, Strings.systemError, null);
       }
     } catch (e) {
-      throw Exception(e.toString());
+       return ApiResponse(500, Strings.systemError, null);
     }
   }
 
@@ -178,11 +185,13 @@ class ApiService {
     try {
       final token = await AppPrefs.share().getToken();
       final pushToken = await AppPrefs.share().getPushToken();
-      Map<String, String> header = {'Authorization': "Bearer $token"};
+      Map<String, String> header = {
+        'Authorization': "Bearer $token",
+        'Content-Type': "application/json"
+      };
       Map<String, String> params = {'notification_token': pushToken};
       final json = jsonEncode(params);
-      final response =
-          await http.put(ApiURL.UPDATE_USER, headers: header, body: json);
+      final response = await http.put(ApiURL.UPDATE_USER, headers: header, body: json);
       if (response.statusCode == 200) {
         // If the server did return a 200 OK response,
         // then parse the JSON.
@@ -191,21 +200,23 @@ class ApiService {
       } else {
         // If the server did not return a 200 OK response,
         // then throw an exception.
-        throw Exception('Failed to update user info');
+        return ApiResponse(response.statusCode, Strings.systemError, null);
       }
     } catch (e) {
-      throw Exception(e.toString());
+       return ApiResponse(500, Strings.systemError, null);
     }
   }
 
   static Future<ApiResponse> updateReceiveNotification(Map params) async {
     try {
       final token = await AppPrefs.share().getToken();
-      Map<String, String> header = {'Authorization': "Bearer $token"};
+      Map<String, String> header = {
+        'Authorization': "Bearer $token",
+        'Content-Type': "application/json"
+      };
       final json = jsonEncode(params);
       print('updateReceiveNotification: ' + jsonEncode(json));
-      final response = await http.put(ApiURL.UPDATE_RECEIVE_NOTIFICATION,
-          headers: header, body: json);
+      final response = await http.put(ApiURL.UPDATE_RECEIVE_NOTIFICATION, headers: header, body: json);
       if (response.statusCode == 200) {
         // If the server did return a 200 OK response,
         // then parse the JSON.
@@ -215,32 +226,10 @@ class ApiService {
       } else {
         // If the server did not return a 200 OK response,
         // then throw an exception.
-        throw Exception('Failed to update receive notification');
+        return ApiResponse(response.statusCode, Strings.systemError, null);
       }
     } catch (e) {
-      throw Exception(e.toString());
-    }
-  }
-
-  static Future<bool> downloadFile(
-      String url, String fileName, String localPath) async {
-    try {
-      final response = await http.get(url);
-
-      if (response.contentLength == 0) {
-        return false;
-      }
-      Directory folderFile = new Directory(localPath);
-      if (await folderFile.exists() == false) {
-        folderFile.create();
-      }
-      File downloadFile =
-          new File(localPath + Platform.pathSeparator + fileName);
-      await downloadFile.writeAsBytes(response.bodyBytes);
-      return true;
-    } catch (e) {
-      print(e.toString());
-      return false;
+       return ApiResponse(500, Strings.systemError, null);
     }
   }
 
@@ -262,10 +251,10 @@ class ApiService {
       } else {
         // If the server did not return a 200 OK response,
         // then throw an exception.
-        throw Exception('Failed to Sign up');
+        return ApiResponse(response.statusCode, Strings.systemError, null);
       }
     } catch (e) {
-      throw Exception(e.toString());
+       return ApiResponse(500, Strings.systemError, null);
     }
   }
 
@@ -287,10 +276,10 @@ class ApiService {
       } else {
         // If the server did not return a 200 OK response,
         // then throw an exception.
-        throw Exception('Failed to Sign up 2');
+        return ApiResponse(response.statusCode, Strings.systemError, null);
       }
     } catch (e) {
-      throw Exception(e.toString());
+       return ApiResponse(500, Strings.systemError, null);
     }
   }
 
@@ -300,8 +289,7 @@ class ApiService {
       final Map<String, String> header = {
         'Content-Type': 'application/json; charset=UTF-8',
       };
-      final response =
-          await http.post(ApiURL.FORGOT, headers: header, body: json);
+        final response = await http.post(ApiURL.FORGOT, headers: header, body: json);
       print('forgot params: ' + json);
       if (response.statusCode == 200) {
         // If the server did return a 200 OK response,
@@ -312,22 +300,19 @@ class ApiService {
       } else {
         // If the server did not return a 200 OK response,
         // then throw an exception.
-        throw Exception('Failed to forgot');
+        return ApiResponse(response.statusCode, Strings.systemError, null);
       }
     } catch (e) {
-      throw Exception(e.toString());
+       return ApiResponse(500, Strings.systemError, null);
     }
   }
 
   // get_subscribe: yes/no
-  // + yes: có trường unread_message
-  // + no: có trường is_subcribe
+  // + yes: đã tham gia
+  // + no: chưa tham gia
   // + ""(để trống): lấy tất cả topic
   static Future<ApiResponse<PageTopicModel>> getListTopic(
-      {String name = "",
-      String getSubscribe = "yes",
-      int page = 1,
-      int size = 10}) async {
+      {String name = "", String getSubscribe = "yes", int page = 1, int size = 10}) async {
     try {
       Map<String, String> queryParams = {
         'name': name,
@@ -352,10 +337,61 @@ class ApiService {
       } else {
         // If the server did not return a 200 OK response,
         // then throw an exception.
-        throw Exception('Failed to get topic');
+        return ApiResponse(response.statusCode, Strings.systemError, null);
       }
     } catch (e) {
-      throw Exception(e.toString());
+       return ApiResponse(500, Strings.systemError, null);
+    }
+  }
+
+  static Future<ApiResponse<TopicModel>> getTopic(
+      String topicId) async {
+    try {
+      final token = await AppPrefs.share().getToken();
+      Map<String, String> header = {
+        'Authorization': "Bearer $token",
+        'Content-Type': "application/json"
+      };
+      final url = ApiURL.TOPIC + "/" + topicId;
+      print('topic detail url: ' + url);
+      final response = await http.get(url, headers: header);
+      if (response.statusCode == 200) {
+        // If the server did return a 200 OK response,
+        // then parse the JSON.
+        final jsonBody = jsonDecode(response.body);
+        print('topic detail: ' + jsonEncode(jsonBody));
+        return ApiResponse.fromJson(jsonBody);
+      } else {
+        // If the server did not return a 200 OK response,
+        // then throw an exception.
+        return ApiResponse(response.statusCode, Strings.systemError, null);
+      }
+    } catch (e) {
+       return ApiResponse(500, Strings.systemError, null);
+    }
+  }
+
+  static Future<UnReadResponse> getUnread() async {
+    try {
+      final token = await AppPrefs.share().getToken();
+      Map<String, String> header = {
+        'Authorization': "Bearer $token",
+        'Content-Type': "application/json"
+      };
+      final response = await http.get(ApiURL.UNREAD_NUMBER, headers: header);
+      if (response.statusCode == 200) {
+        // If the server did return a 200 OK response,
+        // then parse the JSON.
+        final jsonBody = jsonDecode(response.body);
+        print('getUnread detail: ' + jsonEncode(jsonBody));
+        return UnReadResponse.fromJson(jsonBody);
+      } else {
+        // If the server did not return a 200 OK response,
+        // then throw an exception.
+        return UnReadResponse(response.statusCode, Strings.systemError, null);
+      }
+    } catch (e) {
+       return UnReadResponse(500, Strings.systemError, null);
     }
   }
 
@@ -367,8 +403,7 @@ class ApiService {
         'Authorization': "Bearer $token",
         'Content-Type': "application/json"
       };
-      final response =
-          await http.put(ApiURL.SUBSCRIBE, headers: header, body: json);
+      final response = await http.put(ApiURL.SUBSCRIBE, headers: header, body: json);
       print('SUBSCRIBE params: ' + jsonEncode(params));
       if (response.statusCode == 200) {
         // If the server did return a 200 OK response,
@@ -379,10 +414,10 @@ class ApiService {
       } else {
         // If the server did not return a 200 OK response,
         // then throw an exception.
-        throw Exception('Failed to subscribe');
+        return ApiResponse(response.statusCode, Strings.systemError, null);
       }
     } catch (e) {
-      throw Exception(e.toString());
+       return ApiResponse(500, Strings.systemError, null);
     }
   }
 
@@ -393,7 +428,7 @@ class ApiService {
         'Authorization': "Bearer $token",
         'Content-Type': "application/json"
       };
-      final url = ApiURL.NAVIGATE;
+      final url = ApiURL.NAVIGATE ;
       print('navigate url: ' + url);
       final response = await http.get(url, headers: header);
       if (response.statusCode == 200) {
@@ -405,10 +440,124 @@ class ApiService {
       } else {
         // If the server did not return a 200 OK response,
         // then throw an exception.
-        throw Exception('Failed to get navigate');
+        return PageNavigateModel(response.statusCode, Strings.systemError, null);
       }
     } catch (e) {
-      throw Exception(e.toString());
+       return PageNavigateModel(500, Strings.systemError, null);
+    }
+  }
+
+  static Future<ApiResponse> clickMessage(String messageId) async {
+    try {
+      final params = {
+        "message_id": messageId
+      };
+      final json = jsonEncode(params);
+      final token = await AppPrefs.share().getToken();
+      Map<String, String> header = {
+        'Authorization': "Bearer $token",
+        'Content-Type': "application/json"
+      };
+      final response = await http.patch(ApiURL.CLICK_MESSAGE, headers: header, body: json);
+      print('click message params: ' + jsonEncode(params));
+      if (response.statusCode == 200) {
+        // If the server did return a 200 OK response,
+        // then parse the JSON.
+        final jsonBody = jsonDecode(response.body);
+        print('click message: ' + jsonEncode(jsonBody));
+        return ApiResponse.fromJson(jsonBody);
+      } else {
+        // If the server did not return a 200 OK response,
+        // then throw an exception.
+        return ApiResponse(response.statusCode, Strings.systemError, null);
+      }
+    } catch (e) {
+       return ApiResponse(500, Strings.systemError, null);
+    }
+  }
+
+  static Future<ApiResponse> receiveMessage(String messageId) async {
+    try {
+      final params = {
+        "message_id": messageId
+      };
+      final json = jsonEncode(params);
+      final token = await AppPrefs.share().getToken();
+      Map<String, String> header = {
+        'Authorization': "Bearer $token",
+        'Content-Type': "application/json"
+      };
+      final response = await http.patch(ApiURL.RECEIVE_MESSAGE, headers: header, body: json);
+      print('receive message params: ' + jsonEncode(params));
+      if (response.statusCode == 200) {
+        // If the server did return a 200 OK response,
+        // then parse the JSON.
+        final jsonBody = jsonDecode(response.body);
+        print('receive message: ' + jsonEncode(jsonBody));
+        return ApiResponse.fromJson(jsonBody);
+      } else {
+        // If the server did not return a 200 OK response,
+        // then throw an exception.
+        return ApiResponse(response.statusCode, Strings.systemError, null);
+      }
+    } catch (e) {
+       return ApiResponse(500, Strings.systemError, null);
+    }
+  }
+
+  static Future<ApiResponse> joinQr(String topicId) async {
+    try {
+      final params = {
+        "subscribe": true,
+        "qr_code": topicId
+      };
+      final json = jsonEncode(params);
+      final token = await AppPrefs.share().getToken();
+      Map<String, String> header = {
+        'Authorization': "Bearer $token",
+        'Content-Type': "application/json"
+      };
+      print('qrcode message params: ' + jsonEncode(params));
+      final response = await http.post(ApiURL.QRCODE, headers: header, body: json);
+      if (response.statusCode == 200) {
+        // If the server did return a 200 OK response,
+        // then parse the JSON.
+        final jsonBody = jsonDecode(response.body);
+        print('qrcode message: ' + jsonEncode(jsonBody));
+        return ApiResponse.fromJson(jsonBody);
+      } else {
+        // If the server did not return a 200 OK response,
+        // then throw an exception.
+        return ApiResponse(response.statusCode, Strings.systemError, null);
+      }
+    } catch (e) {
+       return ApiResponse(500, Strings.systemError, null);
+    }
+  }
+
+  static Future<ApiResponse> verifyRegister(Map params) async {
+    try {
+      final json = jsonEncode(params);
+      final token = await AppPrefs.share().getToken();
+      Map<String, String> header = {
+        'Authorization': "Bearer $token",
+        'Content-Type': "application/json"
+      };
+      print('verifyRegister message params: ' + jsonEncode(params));
+      final response = await http.post(ApiURL.CONFIRM_REGISTER, headers: header, body: json);
+      if (response.statusCode == 200) {
+        // If the server did return a 200 OK response,
+        // then parse the JSON.
+        final jsonBody = jsonDecode(response.body);
+        print('verifyRegister message: ' + jsonEncode(jsonBody));
+        return ApiResponse.fromJson(jsonBody);
+      } else {
+        // If the server did not return a 200 OK response,
+        // then throw an exception.
+        return ApiResponse(response.statusCode, Strings.systemError, null);
+      }
+    } catch (e) {
+       return ApiResponse(500, Strings.systemError, null);
     }
   }
 }
