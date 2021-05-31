@@ -1,6 +1,6 @@
 class ApiURL {
-  static final API = "https://chatlp-server.herokuapp.com/";
-  static final SOCKET = "https://chatlp-server.herokuapp.com";
+  static final API = "https://api-chatlp.sky-demo.net/";
+  static final SOCKET = "https://api-chatlp.sky-demo.net/";
   // static final API = "http://api.wes-jsc.com/";
   // static final SOCKET = "http://api.wes-jsc.com";
   static final LOGIN = API + "api/app/auth/login";
@@ -13,7 +13,8 @@ class ApiURL {
   static final TOPIC = API + "api/app/topic";
   static final SUBSCRIBE = API + "api/app/topic/subscribe";
   static final UPLOAD = API + "api/common/uploads/file";
-  static final UPDATE_RECEIVE_NOTIFICATION = API + "api/app/topic/receive-notification";
+  static final UPDATE_RECEIVE_NOTIFICATION =
+      API + "api/app/topic/receive-notification";
   static final UPDATE_USER = API + "api/app/user/update";
   static final NAVIGATE = API + "api/app/navigation";
   static final CLICK_MESSAGE = API + "api/app/message/click";
